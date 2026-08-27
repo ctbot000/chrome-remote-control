@@ -1,0 +1,4 @@
+node_modules/
+controller/data/
+*.log
+.claude/

@@ -1,0 +1,71 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --panel: #f6f7f9;
+  --ink: #14181f;
+  --muted: #6b7383;
+  --line: #e3e6ec;
+  --accent: #2f6df6;
+  --accent-ink: #ffffff;
+  --ok: #1f9d55;
+  --danger: #d1373a;
+  --warn: #b7791f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161b;
+    --panel: #1a1f26;
+    --ink: #e6e9ee;
+    --muted: #8b93a1;
+    --line: #272d36;
+    --accent: #5b8cff;
+    --accent-ink: #0b0e12;
+    --ok: #46c07f;
+    --danger: #ff6b6e;
+    --warn: #e0b04a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1 { font-size: 14px; margin: 0; }
+h2 { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+p { margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.row { display: flex; align-items: center; gap: 8px; }
+.between { justify-content: space-between; }
+.grow { flex: 1; min-width: 0; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hidden { display: none !important; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.on { background: var(--ok); }
+.dot.off { background: var(--danger); }
+.dot.wait { background: var(--warn); }
+button {
+  font: inherit; cursor: pointer;
+  border: 1px solid transparent; border-radius: 7px;
+  padding: 6px 12px; background: var(--accent); color: var(--accent-ink);
+}
+button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+button.ghost:hover { background: var(--panel); }
+input[type="text"], input[type="password"], textarea {
+  font: inherit; width: 100%; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px;
+}
+textarea { min-height: 88px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+label.field { display: block; margin-bottom: 12px; }
+label.field > span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+.switch { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin-bottom: 8px; }
+.switch input { appearance: none; width: 32px; height: 18px; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; flex: none; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--bg); transition: transform .15s; }
+.switch input:checked { background: var(--ok); }
+.switch input:checked::after { transform: translateX(14px); }
+.note { font-size: 11px; color: var(--muted); }
+.error { color: var(--danger); font-size: 12px; min-height: 1.2em; }
+.ok { color: var(--ok); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 12px; }

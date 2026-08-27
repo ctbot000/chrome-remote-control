@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Chrome Remote Control — settings</title>
+<link rel="stylesheet" href="ui.css" />
+<style>
+  body { max-width: 620px; margin: 0 auto; padding: 28px 20px 60px; }
+  header { margin-bottom: 20px; }
+  section { margin-bottom: 22px; }
+  .actions { display: flex; gap: 8px; align-items: center; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Chrome Remote Control</h1>
+    <p class="muted">This browser reports the pages it opens to your controller, and applies the
+      blocklist the controller sends back.</p>
+    <div class="card row">
+      <span class="dot" id="dot"></span>
+      <span class="grow" id="link">checking…</span>
+      <span class="muted mono" id="rules">—</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Controller</h2>
+    <label class="field">
+      <span>WebSocket URL</span>
+      <input type="text" id="controllerUrl" placeholder="ws://127.0.0.1:8787/ws" spellcheck="false" />
+    </label>
+    <label class="field">
+      <span>Token</span>
+      <input type="password" id="token" placeholder="printed when the controller starts" spellcheck="false" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span>This browser's name</span>
+      <input type="text" id="deviceName" placeholder="Chrome on macOS" />
+    </label>
+  </section>
+
+  <section>
+    <h2>What this extension does</h2>
+    <label class="switch"><input type="checkbox" id="reporting" /><span>Report visited pages</span></label>
+    <label class="switch"><input type="checkbox" id="enforcing" /><span>Enforce the controller's blocklist</span></label>
+    <p class="note">Turning reporting off keeps the connection but sends nothing. Turning enforcement
+      off removes every blocking rule from this browser immediately.</p>
+  </section>
+
+  <section>
+    <h2>Never touch these sites</h2>
+    <label class="field">
+      <span>One host per line — never reported, never blocked</span>
+      <textarea id="ignoredHosts" placeholder="mybank.example&#10;health.example"></textarea>
+    </label>
+  </section>
+
+  <div class="actions">
+    <button id="save">Save</button>
+    <button class="ghost" id="test">Save &amp; reconnect</button>
+    <span id="saved" class="ok"></span>
+  </div>
+  <p class="error" id="error"></p>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

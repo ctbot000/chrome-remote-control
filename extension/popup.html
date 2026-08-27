@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="ui.css" />
+<style>
+  body { width: 300px; padding: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+  .stat b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  footer { display: flex; gap: 8px; margin-top: 10px; }
+  footer button { flex: 1; }
+</style>
+</head>
+<body>
+  <div class="row between">
+    <h1>Remote Control</h1>
+    <span class="row"><span class="dot" id="dot"></span><span class="muted" id="link">…</span></span>
+  </div>
+  <p class="note ellipsis mono" id="controller">—</p>
+  <p class="error" id="error"></p>
+
+  <div class="stats">
+    <div class="stat"><b id="s-sent">0</b><span>visits sent</span></div>
+    <div class="stat"><b id="s-queued">0</b><span>queued</span></div>
+    <div class="stat"><b id="s-rules">0</b><span>blocked sites</span></div>
+    <div class="stat"><b id="s-hits">0</b><span>blocks hit</span></div>
+  </div>
+
+  <label class="switch"><input type="checkbox" id="reporting" /><span>Report visits to the controller</span></label>
+  <label class="switch"><input type="checkbox" id="enforcing" /><span>Enforce the controller's blocklist</span></label>
+
+  <footer>
+    <button class="ghost" id="reconnect">Reconnect</button>
+    <button class="ghost" id="dashboard">Dashboard</button>
+    <button class="ghost" id="options">Settings</button>
+  </footer>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

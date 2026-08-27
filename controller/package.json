@@ -1,0 +1,15 @@
+{
+  "name": "chrome-remote-control-controller",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Controller for the chrome-remote-control extension: visit log, blocklist, live dashboard",
+  "main": "index.js",
+  "bin": { "crc-controller": "index.js" },
+  "scripts": {
+    "start": "node index.js",
+    "fake-agent": "node tools/fake-agent.js",
+    "test": "node tools/selftest.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}

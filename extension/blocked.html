@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Blocked</title>
+<link rel="stylesheet" href="ui.css" />
+<style>
+  body { display: grid; place-items: center; min-height: 100vh; }
+  main { max-width: 460px; padding: 28px; text-align: center; }
+  .shield { font-size: 40px; line-height: 1; margin-bottom: 12px; }
+  h1 { font-size: 20px; margin-bottom: 6px; }
+  .host { font-size: 15px; margin: 14px 0; padding: 9px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); }
+  .buttons { display: flex; gap: 8px; justify-content: center; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="shield">🛑</div>
+  <h1>This site is blocked</h1>
+  <p class="muted">Your controller's blocklist covers this address.</p>
+  <div class="host mono" id="host">—</div>
+  <p class="note">Remove the rule in the controller dashboard to get access back. The attempt has
+    been reported.</p>
+  <div class="buttons">
+    <button class="ghost" id="back">Go back</button>
+    <button class="ghost" id="settings">Extension settings</button>
+  </div>
+</main>
+<script src="blocked.js" type="module"></script>
+</body>
+</html>
