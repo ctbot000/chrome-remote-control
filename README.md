@@ -28,8 +28,8 @@ It prints a dashboard URL with a token baked in, and the WebSocket URL plus toke
 for the extension:
 
 ```
-  dashboard   http://127.0.0.1:8787/?token=388d8d6d…
-  extension   ws://127.0.0.1:8787/ws   token 388d8d6d…
+  dashboard   http://127.0.0.1:8787/?token=<48 hex characters>
+  extension   ws://127.0.0.1:8787/ws   token <48 hex characters>
 ```
 
 The token is generated once and kept in `controller/data/config.json`. It binds
