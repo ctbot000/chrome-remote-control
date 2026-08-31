@@ -69,6 +69,23 @@
     <p class="empty" id="tops-empty">No traffic recorded yet.</p>
   </section>
 
+  <section class="card lock-card">
+    <h2>Extension settings password</h2>
+    <div class="lock-row">
+      <div class="grow">
+        <div id="lock-state">No password set.</div>
+        <div class="sub" id="lock-hint">Browsers can change their own settings — including turning
+          reporting and blocking off.</div>
+      </div>
+      <form class="lock-form" id="lock-form">
+        <input type="password" id="lock-password" placeholder="new password" autocomplete="new-password" />
+        <button type="submit" id="lock-set">Set</button>
+        <button type="button" class="ghost danger hidden" id="lock-clear">Remove</button>
+      </form>
+    </div>
+    <p class="error" id="lock-error"></p>
+  </section>
+
   <section class="card feed-card">
     <div class="feed-head">
       <h2>Live visits</h2>

@@ -224,6 +224,57 @@ async function main() {
     assert.equal(JSON.parse(lines[0]).host, 'news.ycombinator.com');
   });
 
+  // --- settings password --------------------------------------------------
+  const shortPassword = await api('/api/settings-password', {
+    method: 'POST',
+    body: JSON.stringify({ password: 'abc' }),
+  });
+  check('a too-short settings password is refused', () => {
+    assert.equal(shortPassword.status, 400);
+    assert.match(shortPassword.body.error, /at least 6/);
+  });
+
+  const noPassword = await api('/api/settings-password', { method: 'DELETE' });
+  check('clearing an unset settings password is a 404', () => assert.equal(noPassword.status, 404));
+
+  const setPassword = await api('/api/settings-password', {
+    method: 'POST',
+    body: JSON.stringify({ password: 'let me in please' }),
+  });
+  check('setting the password reports it set, without the verifier', () => {
+    assert.equal(setPassword.status, 200);
+    assert.equal(setPassword.body.policy.lock.passwordSet, true);
+    assert.equal(setPassword.body.policy.lock.hash, undefined);
+    assert.equal(setPassword.body.policy.lock.salt, undefined);
+  });
+
+  const withLock = await waitFor(agent.bus, (m) => m.type === 'policy' && m.policy.lock, 'lock push');
+  check('the agent is pushed a verifier it can check offline', () => {
+    assert.match(withLock.policy.lock.salt, /^[0-9a-f]{32}$/);
+    assert.match(withLock.policy.lock.hash, /^[0-9a-f]{64}$/);
+    assert.ok(withLock.policy.lock.iterations >= 100000);
+  });
+
+  const uiPolicy = ui.bus.messages.filter((m) => m.type === 'policy').pop();
+  check('the dashboard is never sent the verifier', () => {
+    assert.equal(uiPolicy.policy.lock.passwordSet, true);
+    assert.equal(uiPolicy.policy.lock.hash, undefined);
+  });
+  const stateWithLock = await api('/api/state');
+  check('the REST view is never sent the verifier', () => {
+    assert.equal(stateWithLock.body.policy.lock.passwordSet, true);
+    assert.equal(JSON.stringify(stateWithLock.body).includes('"hash"'), false);
+  });
+
+  const cleared = await api('/api/settings-password', { method: 'DELETE' });
+  check('clearing the password removes it', () => assert.equal(cleared.body.policy.lock.passwordSet, false));
+  const withoutLock = await waitFor(
+    agent.bus,
+    (m) => m.type === 'policy' && m.policy.lock === null,
+    'lock removal push'
+  );
+  check('agents are told the password is gone', () => assert.equal(withoutLock.policy.lock, null));
+
   // --- rude clients -------------------------------------------------------
   const rude = await connect(`ws://127.0.0.1:${port}/ws?role=ui&token=${token}`);
   await waitFor(rude.bus, (m) => m.type === 'snapshot', 'snapshot for the rude client');

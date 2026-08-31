@@ -6,6 +6,7 @@ import { getSettings, setSettings, patchStatus } from './lib/config.js';
 import { connect, disconnect, pushQueue, reapplyCachedPolicy, connectionSummary, isOpen } from './lib/connection.js';
 import { recordNavigation, isReportableUrl, clearQueue } from './lib/visits.js';
 import { isBlockedUrl } from './lib/blocking.js';
+import { unlock, lockNow, requireUnlocked } from './lib/lock.js';
 
 const ALARM = 'crc-heartbeat';
 
@@ -54,9 +55,25 @@ chrome.webNavigation.onHistoryStateUpdated.addListener(async (details) => {
 
 // --- popup / options RPC --------------------------------------------------
 
+// Anything that could weaken reporting or blocking goes through the lock the
+// controller set. Reconnecting and re-applying the policy stay open: neither
+// can turn the extension down.
+const gated = (handler) => async (message) => {
+  await requireUnlocked();
+  return handler(message);
+};
+
 const handlers = {
   'get-summary': () => connectionSummary(),
-  'save-settings': async ({ patch }) => {
+  unlock: async ({ password }) => {
+    await unlock(password);
+    return connectionSummary();
+  },
+  lock: async () => {
+    await lockNow();
+    return connectionSummary();
+  },
+  'save-settings': gated(async ({ patch }) => {
     const before = await getSettings();
     const after = await setSettings(patch);
     await reapplyCachedPolicy();
@@ -69,20 +86,20 @@ const handlers = {
       await connect();
     }
     return connectionSummary();
-  },
+  }),
   reconnect: async () => {
     disconnect();
     await connect({ force: true });
     return connectionSummary();
   },
-  disconnect: async () => {
+  disconnect: gated(async () => {
     await disconnect();
     return connectionSummary();
-  },
-  'clear-queue': async () => {
+  }),
+  'clear-queue': gated(async () => {
     await clearQueue();
     return connectionSummary();
-  },
+  }),
   resync: async () => {
     await reapplyCachedPolicy();
     return connectionSummary();

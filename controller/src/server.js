@@ -273,6 +273,22 @@ async function handleApi(req, res, url, route, { store, hub }) {
     return;
   }
 
+  if (route === '/api/settings-password') {
+    if (method === 'POST') {
+      const body = await readBody(req);
+      store.setSettingsPassword(body.password);
+      hub.policyChanged();
+      json(res, 200, { policy: store.getPolicyDetail() });
+      return;
+    }
+    if (method === 'DELETE') {
+      store.clearSettingsPassword();
+      hub.policyChanged();
+      json(res, 200, { policy: store.getPolicyDetail() });
+      return;
+    }
+  }
+
   if (route === '/api/commands' && method === 'POST') {
     const body = await readBody(req);
     const sent = hub.sendCommand(body.target || 'all', {

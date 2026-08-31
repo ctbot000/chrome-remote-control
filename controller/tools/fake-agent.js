@@ -69,7 +69,11 @@ client.on('message', (raw) => {
   if (msg.type === 'welcome' || msg.type === 'policy') {
     blockedHosts = (msg.policy.rules || []).map((r) => r.host);
     const on = msg.policy.blockingEnabled;
-    console.log(`policy v${msg.policy.version}: blocking ${on ? 'on' : 'off'}, ${blockedHosts.length} host(s)`);
+    const lock = msg.policy.lock ? `settings password set (${msg.policy.lock.iterations} rounds)` : 'no settings password';
+    console.log(
+      `policy v${msg.policy.version}: blocking ${on ? 'on' : 'off'}, ` +
+        `${blockedHosts.length} host(s), ${lock}`
+    );
     client.send({
       type: 'status',
       policyVersion: msg.policy.version,

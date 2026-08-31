@@ -9,6 +9,9 @@
   header { margin-bottom: 20px; }
   section { margin-bottom: 22px; }
   .actions { display: flex; gap: 8px; align-items: center; }
+  .lock-card { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+  .lock-card form { display: flex; gap: 8px; margin: 10px 0 0; }
+  .lock-card input { flex: 1; }
 </style>
 </head>
 <body>
@@ -23,44 +26,62 @@
     </div>
   </header>
 
-  <section>
-    <h2>Controller</h2>
-    <label class="field">
-      <span>WebSocket URL</span>
-      <input type="text" id="controllerUrl" placeholder="ws://127.0.0.1:8787/ws" spellcheck="false" />
-    </label>
-    <label class="field">
-      <span>Token</span>
-      <input type="password" id="token" placeholder="printed when the controller starts" spellcheck="false" autocomplete="off" />
-    </label>
-    <label class="field">
-      <span>This browser's name</span>
-      <input type="text" id="deviceName" placeholder="Chrome on macOS" />
-    </label>
+  <section class="card lock-card hidden" id="lock-gate">
+    <h2>Settings are locked</h2>
+    <p class="note">Your controller set a password on these settings. It can only be changed or
+      removed from the controller, not from this browser.</p>
+    <form id="unlock-form">
+      <input type="password" id="unlock-password" placeholder="password" autocomplete="current-password" />
+      <button type="submit">Unlock</button>
+    </form>
+    <p class="error" id="unlock-error"></p>
   </section>
 
-  <section>
-    <h2>What this extension does</h2>
-    <label class="switch"><input type="checkbox" id="reporting" /><span>Report visited pages</span></label>
-    <label class="switch"><input type="checkbox" id="enforcing" /><span>Enforce the controller's blocklist</span></label>
-    <p class="note">Turning reporting off keeps the connection but sends nothing. Turning enforcement
-      off removes every blocking rule from this browser immediately.</p>
-  </section>
+  <div id="settings-body">
+    <section class="card row hidden" id="unlocked-note">
+      <span class="grow">Unlocked — locks again in <span id="lock-countdown" class="mono">5:00</span></span>
+      <button class="ghost" id="lock-now">Lock now</button>
+    </section>
 
-  <section>
-    <h2>Never touch these sites</h2>
-    <label class="field">
-      <span>One host per line — never reported, never blocked</span>
-      <textarea id="ignoredHosts" placeholder="mybank.example&#10;health.example"></textarea>
-    </label>
-  </section>
+    <section>
+      <h2>Controller</h2>
+      <label class="field">
+        <span>WebSocket URL</span>
+        <input type="text" id="controllerUrl" placeholder="ws://127.0.0.1:8787/ws" spellcheck="false" />
+      </label>
+      <label class="field">
+        <span>Token</span>
+        <input type="password" id="token" placeholder="printed when the controller starts" spellcheck="false" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>This browser's name</span>
+        <input type="text" id="deviceName" placeholder="Chrome on macOS" />
+      </label>
+    </section>
 
-  <div class="actions">
-    <button id="save">Save</button>
-    <button class="ghost" id="test">Save &amp; reconnect</button>
-    <span id="saved" class="ok"></span>
+    <section>
+      <h2>What this extension does</h2>
+      <label class="switch"><input type="checkbox" id="reporting" /><span>Report visited pages</span></label>
+      <label class="switch"><input type="checkbox" id="enforcing" /><span>Enforce the controller's blocklist</span></label>
+      <p class="note">Turning reporting off keeps the connection but sends nothing. Turning enforcement
+        off removes every blocking rule from this browser immediately.</p>
+    </section>
+
+    <section>
+      <h2>Never touch these sites</h2>
+      <label class="field">
+        <span>One host per line — never reported, never blocked</span>
+        <textarea id="ignoredHosts" placeholder="mybank.example&#10;health.example"></textarea>
+      </label>
+    </section>
+
+    <div class="actions">
+      <button id="save">Save</button>
+      <button class="ghost" id="test">Save &amp; reconnect</button>
+      <span id="saved" class="ok"></span>
+    </div>
+    <p class="error" id="error"></p>
   </div>
-  <p class="error" id="error"></p>
 
   <script src="options.js" type="module"></script>
 </body>

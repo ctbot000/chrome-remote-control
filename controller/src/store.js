@@ -8,6 +8,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const MEMORY_VISITS = 5000;
+const PBKDF2_ITERATIONS = 250000;
+const MIN_PASSWORD_LENGTH = 6;
 
 function readJson(file, fallback) {
   try {
@@ -55,9 +57,10 @@ class Store {
 
     this.policy = readJson(this.policyFile, null);
     if (!this.policy) {
-      this.policy = { version: 1, blockingEnabled: true, rules: [], updatedAt: Date.now() };
+      this.policy = { version: 1, blockingEnabled: true, rules: [], lock: null, updatedAt: Date.now() };
       writeJson(this.policyFile, this.policy);
     }
+    if (this.policy.lock === undefined) this.policy.lock = null;
 
     this.visits = this._loadRecentVisits();
   }
@@ -87,16 +90,25 @@ class Store {
 
   // --- policy -------------------------------------------------------------
 
+  // What agents receive: the verifier goes with it, since browsers check the
+  // typed password locally (and so keep working while the controller is down).
   getPolicy() {
     return {
       version: this.policy.version,
       blockingEnabled: this.policy.blockingEnabled,
       rules: this.policy.rules.filter((r) => r.enabled).map((r) => ({ host: r.host })),
+      lock: this.policy.lock,
     };
   }
 
+  // What the dashboard and the REST API receive: no verifier, only whether one
+  // exists. Nothing needs the hash to render or to script the controller.
   getPolicyDetail() {
-    return { ...this.policy, rules: this.policy.rules.slice() };
+    return {
+      ...this.policy,
+      rules: this.policy.rules.slice(),
+      lock: this.policy.lock ? { passwordSet: true, setAt: this.policy.lock.setAt } : { passwordSet: false },
+    };
   }
 
   _bumpPolicy() {
@@ -141,6 +153,33 @@ class Store {
     const rule = this.policy.rules.find((r) => r.id === id || r.host === id);
     if (!rule) throw Object.assign(new Error(`no such rule: ${id}`), { status: 404 });
     rule.enabled = Boolean(enabled);
+    return this._bumpPolicy();
+  }
+
+  // The settings password lives here, not in the browser: the extension is sent
+  // a PBKDF2 verifier and has no route to change or clear it.
+  setSettingsPassword(password) {
+    const value = String(password ?? '');
+    if (value.length < MIN_PASSWORD_LENGTH) {
+      throw Object.assign(
+        new Error(`the password must be at least ${MIN_PASSWORD_LENGTH} characters`),
+        { status: 400 }
+      );
+    }
+    const salt = crypto.randomBytes(16);
+    const hash = crypto.pbkdf2Sync(value, salt, PBKDF2_ITERATIONS, 32, 'sha256');
+    this.policy.lock = {
+      salt: salt.toString('hex'),
+      hash: hash.toString('hex'),
+      iterations: PBKDF2_ITERATIONS,
+      setAt: Date.now(),
+    };
+    return this._bumpPolicy();
+  }
+
+  clearSettingsPassword() {
+    if (!this.policy.lock) throw Object.assign(new Error('no password is set'), { status: 404 });
+    this.policy.lock = null;
     return this._bumpPolicy();
   }
 

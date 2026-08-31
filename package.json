@@ -2,13 +2,16 @@
   "name": "chrome-remote-control",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "A Chrome extension that reports visited sites to a controller, and a controller that blocks sites on it",
   "scripts": {
     "controller": "node controller/index.js",
     "fake-agent": "node controller/tools/fake-agent.js",
-    "icons": "node tools/make-icons.js",
+    "icons": "node tools/make-icons.cjs",
     "test": "node controller/tools/selftest.js && node tools/test-extension.mjs"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "MIT"
 }

@@ -4,6 +4,7 @@
 
 import { getSettings, getStatus, buildSocketUrl, patchStatus } from './config.js';
 import { applyPolicy, clearRules } from './blocking.js';
+import { adoptLock, lockState } from './lock.js';
 import { flush, getQueue } from './visits.js';
 
 const POLICY_KEY = 'policy';
@@ -189,6 +190,7 @@ async function handleMessage(raw) {
 export async function adoptPolicy(policy) {
   if (!policy) return;
   await chrome.storage.local.set({ [POLICY_KEY]: policy });
+  await adoptLock(policy.lock);
   const settings = await getSettings();
   try {
     const { appliedRules, hosts } = await applyPolicy(policy, settings);
@@ -217,6 +219,7 @@ export async function adoptPolicy(policy) {
 export async function reapplyCachedPolicy() {
   const settings = await getSettings();
   const policy = await getCachedPolicy();
+  await adoptLock(policy.lock);
   if (!settings.enforcing) {
     await clearRules();
     await patchStatus({ appliedRules: 0, blockingEnabled: false });
@@ -236,6 +239,11 @@ export async function pushQueue() {
 }
 
 export async function connectionSummary() {
-  const [settings, status, queue] = await Promise.all([getSettings(), getStatus(), getQueue()]);
-  return { settings, status: { ...status, queued: queue.length }, open: isOpen() };
+  const [settings, status, queue, lock] = await Promise.all([
+    getSettings(),
+    getStatus(),
+    getQueue(),
+    lockState(),
+  ]);
+  return { settings, status: { ...status, queued: queue.length }, lock, open: isOpen() };
 }

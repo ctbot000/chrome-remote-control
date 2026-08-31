@@ -163,6 +163,7 @@ function ago(ts) {
 
 function renderAll() {
   renderAgents();
+  renderLock();
   renderPolicy();
   renderStats();
   renderTops();
@@ -199,6 +200,7 @@ function renderAgents() {
 }
 
 function renderPolicy() {
+  renderLock();
   $('blocking-toggle').checked = Boolean(state.policy.blockingEnabled);
   const rules = state.policy.rules || [];
   $('rules-count').textContent = String(rules.filter((r) => r.enabled).length);
@@ -236,6 +238,20 @@ function renderPolicy() {
   }
   renderTops();
   renderFeed();
+}
+
+function renderLock() {
+  const lock = state.policy.lock || { passwordSet: false };
+  const set = Boolean(lock.passwordSet);
+  $('lock-state').textContent = set
+    ? `Password set ${new Date(lock.setAt).toLocaleString()}.`
+    : 'No password set.';
+  $('lock-hint').textContent = set
+    ? 'A browser must enter it to open the extension settings, or to stop reporting or blocking.'
+    : 'Browsers can change their own settings — including turning reporting and blocking off.';
+  $('lock-set').textContent = set ? 'Replace' : 'Set';
+  $('lock-password').placeholder = set ? 'new password' : 'password (6+ characters)';
+  $('lock-clear').classList.toggle('hidden', !set);
 }
 
 function renderStats() {
@@ -334,6 +350,28 @@ $('add-rule-form').addEventListener('submit', async (event) => {
     }
   } catch (err) {
     $('rule-error').textContent = err.message;
+  }
+});
+
+$('lock-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  $('lock-error').textContent = '';
+  const password = $('lock-password').value;
+  try {
+    await api('/api/settings-password', { method: 'POST', body: JSON.stringify({ password }) });
+    $('lock-password').value = '';
+  } catch (err) {
+    $('lock-error').textContent = err.message;
+  }
+});
+
+$('lock-clear').addEventListener('click', async () => {
+  if (!confirm('Remove the settings password? Every browser will be able to change its own settings again.')) return;
+  $('lock-error').textContent = '';
+  try {
+    await api('/api/settings-password', { method: 'DELETE' });
+  } catch (err) {
+    $('lock-error').textContent = err.message;
   }
 });
 

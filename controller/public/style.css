@@ -96,7 +96,10 @@ input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 50%, transpare
 .agents-card { grid-column: span 3; }
 .blocklist-card { grid-column: span 2; }
 .top-card { grid-column: span 2; }
+.lock-card { grid-column: 1 / -1; }
 .feed-card { grid-column: 1 / -1; }
+.lock-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.lock-form { display: flex; gap: 8px; flex: none; }
 @media (max-width: 1000px) {
   .grid { grid-template-columns: 1fr; }
   .card { grid-column: 1 / -1 !important; }

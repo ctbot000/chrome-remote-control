@@ -7,7 +7,7 @@ function ask(type, payload = {}) {
   });
 }
 
-function render({ settings, status, open }) {
+function render({ settings, status, lock, open }) {
   const connected = open && status.connected;
   $('dot').className = `dot ${connected ? 'on' : status.connecting ? 'wait' : 'off'}`;
   $('link').textContent = connected ? 'connected' : status.connecting ? 'connecting' : 'offline';
@@ -19,6 +19,12 @@ function render({ settings, status, open }) {
   $('s-hits').textContent = status.blockedHits ?? 0;
   $('reporting').checked = Boolean(settings.reporting);
   $('enforcing').checked = Boolean(settings.enforcing);
+  // Locked switches are disabled here as well as refused by the worker: the
+  // point of the lock is that they are not one click away.
+  const locked = Boolean(lock?.passwordSet && !lock.unlocked);
+  $('reporting').disabled = locked;
+  $('enforcing').disabled = locked;
+  $('locked-note').classList.toggle('hidden', !locked);
   $('dashboard').dataset.url = dashboardUrl(settings);
 }
 
@@ -42,12 +48,16 @@ async function refresh() {
   }
 }
 
-$('reporting').addEventListener('change', (e) =>
-  ask('save-settings', { patch: { reporting: e.target.checked } }).then(render)
-);
-$('enforcing').addEventListener('change', (e) =>
-  ask('save-settings', { patch: { enforcing: e.target.checked } }).then(render)
-);
+const toggle = (key) => (event) =>
+  ask('save-settings', { patch: { [key]: event.target.checked } })
+    .then(render)
+    .catch((err) => {
+      $('error').textContent = err.message;
+      refresh(); // put the switch back where it actually is
+    });
+
+$('reporting').addEventListener('change', toggle('reporting'));
+$('enforcing').addEventListener('change', toggle('enforcing'));
 $('reconnect').addEventListener('click', () => {
   $('error').textContent = '';
   ask('reconnect').then(render).then(() => setTimeout(refresh, 800));

@@ -5,7 +5,10 @@
 //   node tools/test-extension.mjs
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -14,6 +17,7 @@ const lib = (name) => pathToFileURL(path.join(here, '..', 'extension', 'lib', na
 // --- chrome.* stub --------------------------------------------------------
 
 const store = new Map();
+const session = new Map();
 let dynamicRules = [];
 const badge = { text: '' };
 const tabs = new Map();
@@ -24,6 +28,19 @@ globalThis.chrome = {
     getManifest: () => ({ version: '1.0.0' }),
   },
   storage: {
+    session: {
+      async get(key) {
+        const out = {};
+        if (session.has(key)) out[key] = session.get(key);
+        return out;
+      },
+      async set(items) {
+        for (const [k, v] of Object.entries(items)) session.set(k, v);
+      },
+      async remove(key) {
+        session.delete(key);
+      },
+    },
     local: {
       async get(key) {
         const keys = Array.isArray(key) ? key : [key];
@@ -33,6 +50,9 @@ globalThis.chrome = {
       },
       async set(items) {
         for (const [k, v] of Object.entries(items)) store.set(k, structuredClone(v));
+      },
+      async remove(key) {
+        store.delete(key);
       },
     },
   },
@@ -85,6 +105,8 @@ async function check(name, fn) {
 const { getSettings, setSettings, buildSocketUrl, hostOf, hostMatches } = await import(lib('config.js'));
 const { applyPolicy, getBlockedHosts, isBlockedUrl, clearRules } = await import(lib('blocking.js'));
 const { recordNavigation, getQueue, flush, clearQueue, isReportableUrl } = await import(lib('visits.js'));
+const lockModule = await import(lib('lock.js'));
+const { adoptLock, unlock, lockNow, lockState, requireUnlocked } = lockModule;
 
 const policyOf = (...hosts) => ({
   version: 3,
@@ -266,6 +288,79 @@ await check('clearRules empties both the engine and the cached host list', async
   assert.equal((await chrome.declarativeNetRequest.getDynamicRules()).length, 0);
   assert.deepEqual(await getBlockedHosts(), []);
 });
+
+// --- settings lock --------------------------------------------------------
+// The verifier is built by the controller's own store, so these also prove the
+// two PBKDF2 implementations (node:crypto and WebCrypto) agree.
+
+const require = createRequire(import.meta.url);
+const { Store } = require('../controller/src/store.js');
+const lockDir = fs.mkdtempSync(path.join(os.tmpdir(), 'crc-lock-'));
+const controllerStore = new Store(lockDir);
+
+await check('with no password set, nothing is locked', async () => {
+  await adoptLock(null);
+  const state = await lockState();
+  assert.equal(state.passwordSet, false);
+  assert.equal(state.unlocked, true);
+  await requireUnlocked(); // must not throw
+});
+
+await check('the extension exposes no way to set or clear a password', () => {
+  const setters = Object.keys(lockModule).filter((name) => /^(set|create|change|reset)/i.test(name));
+  assert.deepEqual(setters, []);
+});
+
+controllerStore.setSettingsPassword('open sesame');
+const verifier = controllerStore.getPolicy().lock;
+
+await check('adopting the controller verifier locks the settings', async () => {
+  await adoptLock(verifier);
+  const state = await lockState();
+  assert.equal(state.passwordSet, true);
+  assert.equal(state.unlocked, false);
+});
+
+await check('a gated action is refused while locked', async () => {
+  await assert.rejects(() => requireUnlocked(), /locked/);
+});
+
+await check('the wrong password does not unlock', async () => {
+  await assert.rejects(() => unlock('open sesamee'), /wrong password/);
+  assert.equal((await lockState()).unlocked, false);
+});
+
+await check('a controller-set password verifies in the browser code path', async () => {
+  const state = await unlock('open sesame');
+  assert.equal(state.unlocked, true);
+  assert.ok(state.until > Date.now());
+  await requireUnlocked(); // must not throw
+});
+
+await check('locking again closes the window immediately', async () => {
+  await lockNow();
+  assert.equal((await lockState()).unlocked, false);
+});
+
+await check('a replaced password invalidates an open window', async () => {
+  await unlock('open sesame');
+  assert.equal((await lockState()).unlocked, true);
+  controllerStore.setSettingsPassword('a different one');
+  await adoptLock(controllerStore.getPolicy().lock);
+  assert.equal((await lockState()).unlocked, false);
+  await assert.rejects(() => unlock('open sesame'), /wrong password/);
+  assert.equal((await unlock('a different one')).unlocked, true);
+});
+
+await check('the controller clearing the password unlocks everything', async () => {
+  controllerStore.clearSettingsPassword();
+  await adoptLock(controllerStore.getPolicy().lock);
+  const state = await lockState();
+  assert.equal(state.passwordSet, false);
+  assert.equal(state.unlocked, true);
+});
+
+fs.rmSync(lockDir, { recursive: true, force: true });
 
 console.log(`\n${passes} passed, ${failures} failed`);
 process.exit(failures ? 1 : 0);
